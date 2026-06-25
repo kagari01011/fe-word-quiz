@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>基本情報 単語クイズ</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2d6cdf">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FEクイズ">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #f4f5f7;
+    color: #222;
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
+  }
+  h1 {
+    font-size: 1.3rem;
+    text-align: center;
+    margin: 8px 0 24px;
+  }
+  h2 {
+    font-size: 1.1rem;
+    margin: 0 0 12px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    margin-bottom: 14px;
+  }
+  button, .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    background: #2d6cdf;
+    color: #fff;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+  button.secondary { background: #6b7280; }
+  button.success { background: #16a34a; }
+  button.danger { background: #dc2626; }
+  button.outline {
+    background: #fff;
+    color: #2d6cdf;
+    border: 1px solid #2d6cdf;
+  }
+  button:active { opacity: 0.8; }
+  .cat-list button { text-align: left; background: #fff; color: #222; border: 1px solid #ddd; }
+  .tag {
+    display: inline-block;
+    background: #eef2ff;
+    color: #2d6cdf;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+  }
+  .progress-label { font-size: 0.85rem; color: #666; margin-bottom: 6px; }
+  .meaning { font-size: 1.15rem; line-height: 1.6; min-height: 90px; }
+  .term-reveal { font-size: 1.6rem; font-weight: bold; text-align: center; margin: 14px 0; color: #2d6cdf; }
+  .stat-row { display: flex; justify-content: space-between; font-size: 0.95rem; padding: 6px 0; border-bottom: 1px solid #eee; }
+  .weak-row { font-size: 0.9rem; padding: 5px 0; border-bottom: 1px solid #eee; }
+  input[type=number], input[type=text] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+  }
+  .muted { color: #888; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const WORDS = [{"term": "2進数", "meaning": "コンピュータ内部で情報を表現するために使われる、0と1の2つの数字だけで数を表す方法", "category": "基礎理論"}, {"term": "補数", "meaning": "ある数に加えると桁上がりが発生して0になるような数。コンピュータの減算に利用される", "category": "基礎理論"}, {"term": "論理積", "meaning": "2つの入力がともに真のときだけ真になる論理演算（AND）", "category": "基礎理論"}, {"term": "論理和", "meaning": "2つの入力のいずれかが真であれば真になる論理演算（OR）", "category": "基礎理論"}, {"term": "排他的論理和", "meaning": "2つの入力が異なるときに真になる論理演算（XOR）", "category": "基礎理論"}, {"term": "浮動小数点数", "meaning": "符号・指数部・仮数部を用いて、非常に大きい数や小さい数を表現する数値表現方式", "category": "基礎理論"}, {"term": "最上位ビット", "aliases": ["MSB"], "meaning": "2進数で表現された数値の中で最も大きい桁の重みを持つビット。一般的に数値表現の左端に位置する（MSB）", "category": "基礎理論"}, {"term": "最下位ビット", "aliases": ["LSB"], "meaning": "2進数で表現された数値の中で最も小さい桁の重みを持つビット。一般的に数値表現の右端に位置する（LSB）", "category": "基礎理論"}, {"term": "IEEE", "aliases": ["米国電気電子技術者協会"], "meaning": "電気・電子・情報工学分野の国際的な標準化団体。浮動小数点数の表現形式を定めたIEEE754規格などで知られる米国電気電子技術者協会", "category": "基礎理論"}, {"term": "正規化", "meaning": "浮動小数点数を表現する際に、仮数部の最上位桁が0にならないよう桁をずらして表現形式を一意に定める処理", "category": "基礎理論"}, {"term": "丸め誤差", "meaning": "数値を一定の桁数に四捨五入や切り捨てなどで丸めることによって生じる誤差", "category": "基礎理論"}, {"term": "桁落ち", "meaning": "値の近い2つの数値を減算した際に有効桁数が大きく減ってしまうことで生じる誤差", "category": "基礎理論"}, {"term": "情報落ち", "meaning": "絶対値が大きく異なる数値同士を加減算した際に、小さい方の数値の情報が桁あふれにより失われてしまう誤差", "category": "基礎理論"}, {"term": "打切り誤差", "meaning": "計算処理を有限回で打ち切ることによって、本来得られる値との間に生じる誤差", "category": "基礎理論"}, {"term": "オーバーフロー", "meaning": "演算結果がコンピュータで扱えるデータの表現範囲の上限を超えてしまう現象", "category": "基礎理論"}, {"term": "アンダーフロー", "meaning": "演算結果がコンピュータで扱えるデータの表現範囲の下限を下回り、0に近づきすぎて正しく表現できなくなる現象", "category": "基礎理論"}, {"term": "BCDコード", "aliases": ["2進化10進コード"], "meaning": "10進数の1桁を4ビットの2進数で表現する符号化方式", "category": "基礎理論"}, {"term": "ゾーン10進数", "aliases": ["アンパック10進数"], "meaning": "1バイトで10進数1桁を表現し、上位4ビットにゾーンビット、下位4ビットに数値を格納する10進数の表現方式", "category": "基礎理論"}, {"term": "パック10進数", "meaning": "1バイトに10進数2桁を詰めて格納し、ゾーン10進数より少ないバイト数で数値を表現する方式", "category": "基礎理論"}, {"term": "スタック", "meaning": "後入れ先出し（LIFO）でデータを管理するデータ構造", "category": "アルゴリズムとプログラミング"}, {"term": "キュー", "meaning": "先入れ先出し（FIFO）でデータを管理するデータ構造", "category": "アルゴリズムとプログラミング"}, {"term": "再帰", "meaning": "関数が自分自身を呼び出して処理を行う手法", "category": "アルゴリズムとプログラミング"}, {"term": "クイックソート", "meaning": "基準値（ピボット）を用いてデータを分割しながら並べ替える高速なソートアルゴリズム", "category": "アルゴリズムとプログラミング"}, {"term": "二分探索法", "meaning": "ソート済みのデータの中央値と比較を繰り返して目的の値を探す探索方法", "category": "アルゴリズムとプログラミング"}, {"term": "連結リスト", "meaning": "各データが次のデータへのポインタを持つことで構成されるデータ構造", "category": "アルゴリズムとプログラミング"}, {"term": "CPU", "meaning": "コンピュータの中心で命令の解読と演算を行う中央処理装置", "category": "コンピュータ構成要素"}, {"term": "レジスタ", "meaning": "CPU内部にある高速だが容量の小さい記憶装置", "category": "コンピュータ構成要素"}, {"term": "キャッシュメモリ", "meaning": "CPUと主記憶装置の速度差を埋めるために用いられる高速な記憶装置", "category": "コンピュータ構成要素"}, {"term": "パイプライン処理", "meaning": "命令の実行を複数の段階に分けて並行処理することで高速化する方式", "category": "コンピュータ構成要素"}, {"term": "クロック周波数", "meaning": "CPUが1秒間に処理できる動作のタイミングを示す周波数", "category": "コンピュータ構成要素"}, {"term": "DRAM", "meaning": "リフレッシュ動作が必要だが集積度が高く主記憶装置に使われる半導体メモリ", "category": "コンピュータ構成要素"}, {"term": "クライアントサーバシステム", "meaning": "サービスを要求するクライアントと提供するサーバから構成されるシステム", "category": "システム構成要素"}, {"term": "仮想化", "meaning": "1台の物理的なコンピュータ上で複数の論理的なコンピュータ環境を動作させる技術", "category": "システム構成要素"}, {"term": "クラウドコンピューティング", "meaning": "インターネットを通じて必要なコンピュータ資源を必要な分だけ利用できる仕組み", "category": "システム構成要素"}, {"term": "フォールトトレラント", "meaning": "障害が発生しても機能を維持し続けられるように設計されたシステムの性質", "category": "システム構成要素"}, {"term": "ロードバランシング", "meaning": "複数のサーバに処理負荷を分散させる技術", "category": "システム構成要素"}, {"term": "正規化", "meaning": "データの重複や矛盾を排除するためにテーブルを整理する手法", "category": "データベース"}, {"term": "トランザクション", "meaning": "データベースに対する一連の処理をひとまとまりとして扱う単位", "category": "データベース"}, {"term": "ACID特性", "meaning": "トランザクションが満たすべき原子性・一貫性・独立性・耐久性の性質", "category": "データベース"}, {"term": "排他制御", "meaning": "複数の処理が同時に同じデータを更新することによる不整合を防ぐ制御", "category": "データベース"}, {"term": "インデックス", "meaning": "データベースの検索を高速化するために作成される索引情報", "category": "データベース"}, {"term": "外部キー", "meaning": "他のテーブルの主キーを参照して関連付けを行う列", "category": "データベース"}, {"term": "TCP/IP", "meaning": "インターネットで標準的に使われる通信プロトコル群", "category": "ネットワーク"}, {"term": "DNS", "meaning": "ドメイン名とIPアドレスを相互に変換するシステム", "category": "ネットワーク"}, {"term": "DHCP", "meaning": "ネットワーク上の機器に自動的にIPアドレスなどを割り当てる仕組み", "category": "ネットワーク"}, {"term": "サブネットマスク", "meaning": "IPアドレスをネットワーク部とホスト部に分けるためのビット列", "category": "ネットワーク"}, {"term": "ルータ", "meaning": "異なるネットワーク間でパケットの転送を行う通信機器", "category": "ネットワーク"}, {"term": "OSI参照モデル", "meaning": "通信機能を7つの階層に分けて定義した標準モデル", "category": "ネットワーク"}, {"term": "ファイアウォール", "meaning": "内部ネットワークと外部ネットワークの間で通信を制御し不正アクセスを防ぐ仕組み", "category": "セキュリティ"}, {"term": "公開鍵暗号方式", "meaning": "暗号化と復号に異なる鍵（公開鍵と秘密鍵）を用いる暗号方式", "category": "セキュリティ"}, {"term": "デジタル署名", "meaning": "公開鍵暗号技術を用いて、データの作成者の認証と改ざんの検出を行う技術", "category": "セキュリティ"}, {"term": "SQLインジェクション", "meaning": "不正なSQL文を入力することでデータベースを不正に操作する攻撃手法", "category": "セキュリティ"}, {"term": "フィッシング", "meaning": "金融機関などを装った偽の電子メールやサイトで個人情報を盗み取る詐欺手法", "category": "セキュリティ"}, {"term": "ランサムウェア", "meaning": "データを暗号化するなどして利用不能にし、復旧の対価として金銭を要求するマルウェア", "category": "セキュリティ"}, {"term": "多要素認証", "meaning": "知識情報・所持情報・生体情報のうち複数を組み合わせて行う認証方式", "category": "セキュリティ"}, {"term": "ウォーターフォールモデル", "meaning": "要件定義から運用まで各工程を順番に進めていく開発モデル", "category": "システム開発技術"}, {"term": "アジャイル開発", "meaning": "短い期間で開発とリリースを繰り返しながら進める開発手法", "category": "システム開発技術"}, {"term": "テスト駆動開発", "meaning": "テストコードを先に作成してから実装を行う開発手法", "category": "システム開発技術"}, {"term": "単体テスト", "meaning": "プログラムの個々のモジュールが正しく動作するかを検証するテスト", "category": "システム開発技術"}, {"term": "結合テスト", "meaning": "複数のモジュールを組み合わせて連携が正しく動作するかを検証するテスト", "category": "システム開発技術"}, {"term": "リファクタリング", "meaning": "外部から見た動作を変えずに内部のコードの構造を改善すること", "category": "システム開発技術"}, {"term": "WBS", "meaning": "プロジェクトの作業を階層的に分解して整理した図", "category": "プロジェクトマネジメント"}, {"term": "クリティカルパス", "meaning": "プロジェクトの開始から終了までの作業の中で最も時間がかかる経路", "category": "プロジェクトマネジメント"}, {"term": "ガントチャート", "meaning": "作業の開始日と終了日を横棒で示したスケジュール管理図", "category": "プロジェクトマネジメント"}, {"term": "PERT図", "meaning": "作業の前後関係と所要時間を矢印で表したプロジェクト管理図", "category": "プロジェクトマネジメント"}, {"term": "スコープ", "meaning": "プロジェクトで実施する作業や成果物の範囲", "category": "プロジェクトマネジメント"}, {"term": "SLA", "meaning": "サービス提供者と利用者の間で取り決めるサービス品質の保証内容", "category": "サービスマネジメント"}, {"term": "インシデント管理", "meaning": "サービスの中断を引き起こす事象に対応し、早期に復旧させるための活動", "category": "サービスマネジメント"}, {"term": "ITIL", "meaning": "ITサービスマネジメントのベストプラクティスをまとめたガイドライン", "category": "サービスマネジメント"}, {"term": "問題管理", "meaning": "インシデントの根本原因を特定し再発を防止するための活動", "category": "サービスマネジメント"}, {"term": "BPR", "meaning": "業務プロセスを根本的に見直し再設計することで経営効率を高める手法", "category": "システム戦略"}, {"term": "SOA", "meaning": "ソフトウェアの機能をサービスという単位で組み合わせてシステムを構築する考え方", "category": "システム戦略"}, {"term": "ERP", "meaning": "企業の経営資源を統合的に管理し業務を効率化するシステム", "category": "システム戦略"}, {"term": "情報システム戦略", "meaning": "経営戦略を実現するために情報システムをどのように活用するかを定めた方針", "category": "システム戦略"}, {"term": "SWOT分析", "meaning": "強み・弱み・機会・脅威の4つの観点から自社の状況を分析する手法", "category": "経営戦略"}, {"term": "バランススコアカード", "meaning": "財務・顧客・業務プロセス・学習と成長の4つの視点から業績を評価する手法", "category": "経営戦略"}, {"term": "コアコンピタンス", "meaning": "他社に真似されにくい企業独自の強みとなる能力や技術", "category": "経営戦略"}, {"term": "M&A", "meaning": "企業の合併や買収のこと", "category": "経営戦略"}, {"term": "ニッチ戦略", "meaning": "大手企業が参入していない狭い市場に特化して経営資源を集中させる戦略", "category": "経営戦略"}, {"term": "著作権法", "meaning": "文芸・学術・美術・音楽などの著作物を保護するための法律", "category": "法務"}, {"term": "不正アクセス禁止法", "meaning": "他人のIDやパスワードを無断で使用してコンピュータに侵入する行為などを禁止する法律", "category": "法務"}, {"term": "個人情報保護法", "meaning": "個人情報の適切な取り扱いについて定めた法律", "category": "法務"}, {"term": "労働者派遣法", "meaning": "労働者派遣事業の適正な運営と派遣労働者の保護を図るための法律", "category": "法務"}, {"term": "特定電子メール法", "meaning": "広告や宣伝を目的とした電子メールの送信に関するルールを定めた法律", "category": "法務"}];
+
+const STORAGE_KEY = "fe_quiz_progress_v1";
+const WRONG_WEIGHT = 3;
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveProgress() { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+let progress = loadProgress();
+function wordKey(w) { return `${w.category}::${w.term}`; }
+function entry(w) {
+  const key = wordKey(w);
+  if (!progress[key]) progress[key] = { asked: 0, correct: 0, wrong: 0 };
+  return progress[key];
+}
+
+function normalize(text) {
+  return String(text).normalize("NFKC").trim().toLowerCase().replace(/[ 　]/g, "");
+}
+
+function acceptedAnswers(w) {
+  const list = [w.term, ...(w.aliases || [])];
+  return list.map(normalize);
+}
+
+function categories() {
+  const seen = [];
+  for (const w of WORDS) if (!seen.includes(w.category)) seen.push(w.category);
+  return seen;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+function pickQuestion(pool, lastKey) {
+  let candidates = pool;
+  if (pool.length > 1 && lastKey) candidates = pool.filter(w => wordKey(w) !== lastKey);
+  const weights = candidates.map(w => 1 + entry(w).wrong * WRONG_WEIGHT);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < candidates.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return candidates[i];
+  }
+  return candidates[candidates.length - 1];
+}
+
+const state = {
+  screen: "home",
+  category: null,
+  total: 10,
+  index: 0,
+  current: null,
+  answered: false,
+  lastAnswerCorrect: false,
+  lastKey: null,
+  sessionCorrect: 0,
+  sessionWrong: 0,
+};
+
+function go(screen) { state.screen = screen; render(); }
+
+const actions = {
+  goCategory() { go("category"); },
+  goHome() { go("home"); },
+  goStats() { go("stats"); },
+  selectCategory(cat) {
+    state.category = cat || null;
+    go("setup");
+  },
+  startQuiz(totalStr) {
+    const pool = currentPool();
+    let n = parseInt(totalStr, 10);
+    if (!n || n <= 0) n = 10;
+    state.total = Math.min(n, pool.length * 20); // safety cap
+    state.index = 0;
+    state.sessionCorrect = 0;
+    state.sessionWrong = 0;
+    state.lastKey = null;
+    nextQuestion();
+  },
+  submitAnswer(raw) {
+    if (state.answered) return;
+    const w = state.current;
+    const isCorrect = acceptedAnswers(w).includes(normalize(raw));
+    const e = entry(w);
+    e.asked += 1;
+    if (isCorrect) { e.correct += 1; state.sessionCorrect += 1; }
+    else { e.wrong += 1; state.sessionWrong += 1; }
+    saveProgress();
+    state.answered = true;
+    state.lastAnswerCorrect = isCorrect;
+    render();
+  },
+  nextAfterAnswer() {
+    state.lastKey = wordKey(state.current);
+    state.index += 1;
+    nextQuestion();
+  },
+  endSession() { go("result"); },
+  restart() { actions.startQuiz(String(state.total)); },
+  resetProgress() {
+    if (confirm("これまでの成績をすべて削除します。よろしいですか？")) {
+      progress = {};
+      saveProgress();
+      render();
+    }
+  },
+};
+
+function currentPool() {
+  return state.category ? WORDS.filter(w => w.category === state.category) : WORDS;
+}
+
+function nextQuestion() {
+  if (state.index >= state.total) { go("result"); return; }
+  const pool = currentPool();
+  state.current = pickQuestion(pool, state.lastKey);
+  state.answered = false;
+  go("quiz");
+}
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = renderScreen();
+  const input = document.getElementById("answerInput");
+  if (input) input.focus();
+}
+
+function renderScreen() {
+  switch (state.screen) {
+    case "home": return screenHome();
+    case "category": return screenCategory();
+    case "setup": return screenSetup();
+    case "quiz": return screenQuiz();
+    case "result": return screenResult();
+    case "stats": return screenStats();
+    default: return screenHome();
+  }
+}
+
+function screenHome() {
+  return `
+    <h1>基本情報技術者試験 単語クイズ</h1>
+    <div class="card">
+      <p class="muted">意味を見て用語を入力して答える形式。間違えた用語ほどよく出題されます。</p>
+      <button onclick="actions.goCategory()">問題を始める</button>
+      <button class="outline" onclick="actions.goStats()">成績を見る</button>
+    </div>
+  `;
+}
+
+function screenCategory() {
+  const cats = categories();
+  const items = cats.map(c => `<button onclick="actions.selectCategory('${c}')">${escapeHtml(c)}</button>`).join("");
+  return `
+    <h2>分野を選んでください</h2>
+    <div class="card cat-list">
+      <button onclick="actions.selectCategory('')">すべての分野</button>
+      ${items}
+    </div>
+    <button class="secondary" onclick="actions.goHome()">戻る</button>
+  `;
+}
+
+function screenSetup() {
+  const pool = currentPool();
+  return `
+    <h2>${state.category ? escapeHtml(state.category) : "すべての分野"}</h2>
+    <div class="card">
+      <p class="muted">この分野には ${pool.length} 問あります。</p>
+      <label class="muted">出題数</label>
+      <input id="qcount" type="number" value="10" min="1">
+      <button onclick="actions.startQuiz(document.getElementById('qcount').value)">開始</button>
+    </div>
+    <button class="secondary" onclick="actions.goCategory()">戻る</button>
+  `;
+}
+
+function screenQuiz() {
+  const w = state.current;
+  const progressLabel = `第${state.index + 1}問 / ${state.total}`;
+  let body;
+  if (!state.answered) {
+    body = `
+      <input id="answerInput" type="text" autocomplete="off" autocapitalize="off"
+             placeholder="用語を入力" onkeydown="if(event.key==='Enter') actions.submitAnswer(this.value)">
+      <button class="success" onclick="actions.submitAnswer(document.getElementById('answerInput').value)">解答する</button>
+    `;
+  } else {
+    const aliases = w.aliases || [];
+    const aliasText = aliases.length ? `（別解: ${aliases.map(escapeHtml).join("、")}）` : "";
+    const resultText = state.lastAnswerCorrect
+      ? `<div class="term-reveal" style="color:#16a34a;">○ 正解！</div>`
+      : `<div class="term-reveal" style="color:#dc2626;">× 不正解</div>
+         <p>正解: <strong>${escapeHtml(w.term)}</strong>${aliasText}</p>`;
+    body = `
+      ${resultText}
+      <button onclick="actions.nextAfterAnswer()">次の問題へ</button>
+    `;
+  }
+  return `
+    <div class="progress-label">${progressLabel}</div>
+    <div class="card">
+      <span class="tag">${escapeHtml(w.category)}</span>
+      <div class="meaning">${escapeHtml(w.meaning)}</div>
+      ${body}
+    </div>
+    <button class="secondary" onclick="actions.goHome()">中断してホームへ</button>
+  `;
+}
+
+function screenResult() {
+  return `
+    <h2>結果</h2>
+    <div class="card">
+      <div class="stat-row"><span>正解</span><span>${state.sessionCorrect}</span></div>
+      <div class="stat-row"><span>不正解</span><span>${state.sessionWrong}</span></div>
+      <button onclick="actions.restart()">もう一度同じ条件で</button>
+      <button class="outline" onclick="actions.goHome()">ホームへ</button>
+    </div>
+  `;
+}
+
+function screenStats() {
+  const cats = categories();
+  const rows = cats.map(c => {
+    const catWords = WORDS.filter(w => w.category === c);
+    const asked = catWords.reduce((s, w) => s + entry(w).asked, 0);
+    const correct = catWords.reduce((s, w) => s + entry(w).correct, 0);
+    const text = asked === 0 ? "未挑戦" : `${correct}/${asked} 正解 (${Math.round(correct / asked * 100)}%)`;
+    return `<div class="stat-row"><span>${escapeHtml(c)}</span><span>${text}</span></div>`;
+  }).join("");
+
+  const weak = WORDS
+    .filter(w => entry(w).wrong > 0)
+    .sort((a, b) => entry(b).wrong - entry(a).wrong)
+    .slice(0, 10)
+    .map(w => {
+      const e = entry(w);
+      return `<div class="weak-row">${escapeHtml(w.term)}（${escapeHtml(w.category)}）- 間違い${e.wrong}回 / 出題${e.asked}回</div>`;
+    }).join("") || `<p class="muted">まだ間違えた問題はありません。</p>`;
+
+  return `
+    <h2>分野別の成績</h2>
+    <div class="card">${rows}</div>
+    <h2>苦手な用語 TOP10</h2>
+    <div class="card">${weak}</div>
+    <button class="danger" onclick="actions.resetProgress()">成績をリセット</button>
+    <button class="secondary" onclick="actions.goHome()">戻る</button>
+  `;
+}
+
+render();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+}
+</script>
+</body>
+</html>
