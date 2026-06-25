@@ -41,7 +41,7 @@ def save_progress(progress):
 
 
 def word_key(word):
-    return f"{word['category']}::{word['term']}"
+    return word["id"]
 
 
 def get_entry(progress, word):
